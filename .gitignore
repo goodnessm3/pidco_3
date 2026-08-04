@@ -1,0 +1,7 @@
+__pycache__/
+*.json
+/.idea
+/.ipynb_checkpoints
+*.ipynb
+desktop.ini
+*.txt
