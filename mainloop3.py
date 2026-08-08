@@ -17,7 +17,7 @@ from readmidi import MidiReader
 from voice2 import Voice
 from controls import Controls, configure_voice_list
 
-from mydacs import send_dac_value, dac_setup, ADDRESS_MANAGER, prepare_tune_latch, DAC_MESSAGES, send_dac_value_mcp
+from mydacs import send_dac_value, dac_setup, ADDRESS_MANAGER, DAC_MESSAGES, send_dac_value_mcp
 
 time.sleep(1)
 
@@ -137,43 +137,6 @@ time.sleep(0.001)
 ADDRESS_MANAGER.put(0)
 time.sleep(0.001)
 
-def calibration_loop():
-
-    while 1:
-
-        inst = input(">")
-        dest = inst[:2]  # where to send the value, d1... d8 = DAC channel 1..8
-        val = inst[2:]  # the value to send, 0-255
-        if dest[0] == "d":  # a DAC channel
-            chan = int(dest[1])
-            val = int(val)
-            print(f"sending {val} to DAC channel {chan}")
-            if chan == 8 or chan == 9:  # special case, cutoff freq
-                if chan == 8:
-                    dacchan = 0
-                else:
-                    dacchan = 1
-                ADDRESS_MANAGER.put(CUTOFF_FREQUENCY_DAC_ADDRESS)
-                time.sleep(0.001)
-                send_dac_value_mcp(dacchan, val)
-                time.sleep(0.001)
-                ADDRESS_MANAGER.put(0)
-                send_dac_value(5, 0)  # force a new sample and hold
-                time.sleep(0.001)
-
-            else:
-                time.sleep(0.001)
-                send_dac_value(chan, val)
-                time.sleep(0.001)
-        if dest[0] == "f":  # frequency, set the DCO state machine
-            val = int(val)  # in this case, ff066 means play midi note 66
-            wavecount = wavecount_table.get_note_sm_value(val)
-            OSC.put(wavecount)
-        if dest[0] == "z":
-            break
-
-
-#calibration_loop()
 
 def calibrate_voices():
 

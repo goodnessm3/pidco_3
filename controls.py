@@ -1,6 +1,7 @@
 from voice2 import Voice
 from mydacs import DAC_MESSAGES
-from omni import VOICE_PARAMS, FILTER_V_OCT
+#from omni import VOICE_PARAMS, FILTER_V_OCT
+import omni
 from ADSR3 import ADSRS
 from LFO2 import LFOS
 VOICES = []  # this will be replaced by a voice list passed from the main module
@@ -31,7 +32,8 @@ def set_adr(param, value):
     offset = 0
     idx = SELECTED_PARAMETER
     # this will be read from the state of which parameter we selected from the param select knob
-    for _ in range(4):
+    for _ in range(VOICE_COUNT):
+        print(idx, offset)
         ADSRS[idx + offset].set_rate(param, value)
         offset += 8  # need to update 4 ADSRs, one per voice
 
@@ -46,7 +48,7 @@ def set_sustain_level(value):
 
 def set_base_parameter(dac_channel, value):
 
-    VOICE_PARAMS[dac_channel] = value
+    omni.VOICE_PARAMS[dac_channel] = value
 
 def set_adsr_depth(value):
 
@@ -63,7 +65,7 @@ def set_adsr_depth(value):
         else:
             VOICES[voice].active_adsrs &= ~(1 << idx)  # no need to query this ADSR
             print(f"Voices will not update {parm} ASDR.")
-        offset += 8  # need to update 4 ADSRs, one per voice
+        offset += 8  # need to update ADSRs one per voice
 
 def set_lfo_rate(value):
 
@@ -97,7 +99,7 @@ def set_lfo_shape(value):
 def set_filter_cutoff(dac_channel, value):
 
     print("filter cof set", value)
-    VOICE_PARAMS[dac_channel] = value
+    omni.VOICE_PARAMS[dac_channel] = value
 
 def parameter_select(value):
 
@@ -115,15 +117,14 @@ def set_filter_tracking(value):
     """Scales the contribution of volts/octave tracking to the filter cutoff. Full = tracking is proportional
     to the played note. Zero = filter CoF is static across all notes."""
 
-    global FILTER_V_OCT  # why appears undefined??
-    FILTER_V_OCT = value + 511
+    omni.FILTER_V_OCT = value + 511
 
-    print("filter v oct is", FILTER_V_OCT)
+    print("filter v oct is", omni.FILTER_V_OCT)
 
 def wave_select(v):
 
     if v:  # button down = 65024. Button up = 0 which will evaluate to False
-        VOICE_PARAMS[DAC_WAVESELECT] ^= 65535  # toggle between 0 or 5 V, remember internally it's 16 bit
+        omni.VOICE_PARAMS[DAC_WAVESELECT] ^= 65535  # toggle between 0 or 5 V, remember internally it's 16 bit
 
 
 

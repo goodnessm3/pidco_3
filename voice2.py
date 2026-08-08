@@ -2,7 +2,7 @@ from array import array
 from ADSR3 import ADSRS
 from LFO2 import LFOS
 from mydacs import DAC_MESSAGES
-from omni import VOICE_PARAMS, FILTER_V_OCT, FILTER_VOLTAGE_CURVES
+import omni
 from dac_channels import *
 from fastlog2 import fast_log2
 from settings import *
@@ -46,7 +46,7 @@ class Voice:
 
         #for x in range(8):
             #self.adsrs.append(LinearADSR())
-        self.adsrs = ADSRS[address * 8: address * 8 + 8]  # todo - memoryview?????
+        self.adsrs = ADSRS[address * 8: address * 8 + 9]  # todo - memoryview?????
         self.lfos = LFOS
 
         self.filter_fitter = None  # calculate volts per octave
@@ -61,7 +61,7 @@ class Voice:
 
     def assign_filter_fitter(self):
 
-        self.filter_fitter = FILTER_VOLTAGE_CURVES[self.address]  # calculate volts per octave
+        self.filter_fitter = omni.FILTER_VOLTAGE_CURVES[self.address]  # calculate volts per octave
         # this needs to be run after the filter fitters have been set up, which happens after the voices be instantiated
 
 
@@ -101,19 +101,19 @@ class Voice:
                 todo_lfo >>= 1
                 continue  # don't touch this
 
-            modulation = VOICE_PARAMS[chan]
+            modulation = omni.VOICE_PARAMS[chan]
             #if chan == DAC_CUTOFF:
                 #print("filter slider mod is", modulation)
 
             if chan == DAC_CUTOFF:  # get the v/oct tracking as an additional mod source
 
-                scale = FILTER_V_OCT  # 0..65535 to scale the v/oct
+                scale = omni.FILTER_V_OCT  # 0..65535 to scale the v/oct
                 log2_note = FILTER_CVS[self.held_note]
-                voct = self.filter_fitter.getx(log2_note)  # todo: scale it
-                # todo: check??? This bit shift????
+                voct = self.filter_fitter.getx(log2_note)
                 # somehow all the scales cancel each other out but I've lost track of what is what
                 #print("voct from fitter is", voct)
-                modulation += voct
+                vocter = voct * scale >> 16
+                modulation += vocter
                 #print("Filter scale: ", scale)
                 #print("Filter mod: ", modulation)
                 #modulation -= 32767
@@ -141,6 +141,7 @@ class Voice:
             #if chan == DAC_CUTOFF:
                 #print("filter mod after clipping is", modulation)
 
+            # TODO: scaling for higher res cof DAC??!?!?!? 12 bit
             DAC_MESSAGES.set(addr, chan, modulation >> 8)  # TODO - is this the best place to scale down to 8 bit?
             todo_adsr >>= 1
             todo_lfo >>= 1

@@ -1,3 +1,4 @@
+from settings import VOICE_COUNT
 from wavetables import SAW, RAMP, TRI, SINE
 from myutils import listindex, fpmult
 
@@ -149,5 +150,5 @@ class LFO:
         return line1, line2
 
 LFOS = []
-for x in range(9):  # todo - properly calculate how many and don't instantiate for unused channels
+for x in range(9 * VOICE_COUNT):  # todo - properly calculate how many and don't instantiate for unused channels
     LFOS.append(LFO())  # one per parameter, shared by all voices

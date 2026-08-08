@@ -1,6 +1,9 @@
 import time
 from array import array
 
+from settings import VOICE_COUNT
+
+
 class LinearADSR:
 
     def __init__(self):
@@ -68,5 +71,5 @@ class LinearADSR:
 
 
 ADSRS = []
-for x in range(32):  # todo - properly calculate how many and don't instantiate for unused channels
-    ADSRS.append(LinearADSR())  # address these by index, 8 per voice
+for x in range(9 * VOICE_COUNT):  # todo - properly calculate how many and don't instantiate for unused channels
+    ADSRS.append(LinearADSR())  # address these by index, 9 per voice (COF is 9th channel, channel #8)
