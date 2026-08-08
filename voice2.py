@@ -1,11 +1,11 @@
 from array import array
 from ADSR3 import ADSRS
 from LFO2 import LFOS
-from filtertable import FILTER_CVS
 from mydacs import DAC_MESSAGES
-from omni import VOICE_PARAMS
+from omni import VOICE_PARAMS, FILTER_V_OCT, FILTER_VOLTAGE_CURVES
 from dac_channels import *
-
+from fastlog2 import fast_log2
+from settings import *
 
 class GlobalMods:
 
@@ -18,6 +18,21 @@ class GlobalMods:
         return self.parameters[channel]
 
 GLOBALMODS = GlobalMods()
+
+# set up an array where MIDI note index corresponds to the log2 wavecount. We send these numbers into the filter
+# line fitter to determine what voltage to send to the filter to get this as the cutoff frequency.
+#  TODO can we make this part of the wavecount_table?? Or somehow associate it with that?
+A1 = 55.00
+FILTER_CVS = array("I", [0] * 33)  # pad lower unavailable notes
+# going from A1 as it's the lowest integer number
+for x in range(100):
+    freq = round(A1 * 2**(x/12.0),2)
+    wavetime = 1.0 / freq
+    counttime = 1.0 / SM_FREQ
+    counts = int(wavetime / counttime)
+    l = fast_log2(counts)
+    #print(freq, l)
+    FILTER_CVS.append(l)
 
 
 class Voice:
@@ -34,12 +49,20 @@ class Voice:
         self.adsrs = ADSRS[address * 8: address * 8 + 8]  # todo - memoryview?????
         self.lfos = LFOS
 
+        self.filter_fitter = None  # calculate volts per octave
         #print(self.adsrs)
 
         self.base_values = array("H", [0] * 8)  # class-level parameters set by hardware sliders. Add our modulations
         # e.g. ADSRs and per-voice LFOs, to these variables
 
         self.key_counter = 0  # rather than true or false we need to increment/decrement a counter for "key rollover"
+
+        self.held_note = 0  # MIDI note number for looking up filter CV, this is updated from the main loop
+
+    def assign_filter_fitter(self):
+
+        self.filter_fitter = FILTER_VOLTAGE_CURVES[self.address]  # calculate volts per octave
+        # this needs to be run after the filter fitters have been set up, which happens after the voices be instantiated
 
 
     def key_down(self):
@@ -79,6 +102,26 @@ class Voice:
                 continue  # don't touch this
 
             modulation = VOICE_PARAMS[chan]
+            #if chan == DAC_CUTOFF:
+                #print("filter slider mod is", modulation)
+
+            if chan == DAC_CUTOFF:  # get the v/oct tracking as an additional mod source
+
+                scale = FILTER_V_OCT  # 0..65535 to scale the v/oct
+                log2_note = FILTER_CVS[self.held_note]
+                voct = self.filter_fitter.getx(log2_note)  # todo: scale it
+                # todo: check??? This bit shift????
+                # somehow all the scales cancel each other out but I've lost track of what is what
+                #print("voct from fitter is", voct)
+                modulation += voct
+                #print("Filter scale: ", scale)
+                #print("Filter mod: ", modulation)
+                #modulation -= 32767
+                modulation -= FILTER_MOD_OFFSET
+                # this is something to do with the difference between the cof and fundamental
+                # we need to sort of invert the slider. Slider fully up -> 0 and filter is fully open
+                # lower slider values = lower cutoff freq
+
 
             if todo_adsr & 1:
                 val = self.adsrs[chan].get()
@@ -88,6 +131,15 @@ class Voice:
                 #print("voice calling lfo", chan)
                 val = self.lfos[chan].get(self.address)  # LFOs track the caller to do a unique phase offset
                 modulation += val
+
+            if modulation > 65535:  # filter mod may exceed the range due to v/oct tracking
+                modulation = 65535  # apparently this is faster than using min, because no function call
+
+            if modulation < 0:
+                modulation = 0
+
+            #if chan == DAC_CUTOFF:
+                #print("filter mod after clipping is", modulation)
 
             DAC_MESSAGES.set(addr, chan, modulation >> 8)  # TODO - is this the best place to scale down to 8 bit?
             todo_adsr >>= 1

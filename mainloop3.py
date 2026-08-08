@@ -24,6 +24,8 @@ time.sleep(1)
 from filter_calibration import get_frequency_counts
 from line_fitter_fixedpoint import FitterFP
 
+from omni import FILTER_VOLTAGE_CURVES
+
 # DAC setup code
 #prepare_tune_latch()
 #ADDRESS_MANAGER.put(7)  # unused address to force all latches off
@@ -176,11 +178,12 @@ def calibration_loop():
 def calibrate_voices():
 
     for x in range(VOICE_COUNT):
-        startup_calibration(x)
+        startup_calibration(x, FILTER_VOLTAGE_CURVES=FILTER_VOLTAGE_CURVES)
 
-def startup_calibration(voiceno):
+def startup_calibration(voiceno, FILTER_VOLTAGE_CURVES):
 
     calcurve = FitterFP(size=5)  # important to give it the right number of samples for its size!!
+    FILTER_VOLTAGE_CURVES[voiceno] = calcurve
 
     ADDRESS_MANAGER.put(voiceno)
     calibration_messages = [(DAC_VCA, 255),  # VCA fully open
@@ -201,7 +204,7 @@ def startup_calibration(voiceno):
         time.sleep(0.001)
         ADDRESS_MANAGER.put(voiceno)
         send_dac_value(DAC_DUMMY, 0)  # force a new sample of the COF voltage by asserting chip select
-        time.sleep(1)  # temp to see on the scope, make shorter after
+        time.sleep(0.1)  # temp to see on the scope, make shorter after
         hi, lo = get_frequency_counts()
         logcnt = fast_log2(hi + lo)
         print(f"logcnt at {q} is {logcnt} Hz from {hi} {lo}")
@@ -210,7 +213,7 @@ def startup_calibration(voiceno):
     calcurve.fit_line()  # curve established. Can predict the log2(wavecnt) for an input voltage
 
     print("curve calibrated:")
-    for q in (100, 200, 150, 120, 220):
+    for q in (220, 200, 150, 120, 100):
         print(q, calcurve.gety(q << 8) >> 8)  # something about precision needs these bit shifts
         # todo - just put that nonsense inside the function
     for x in (50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 20000):  # print voltage required for Hz cutoff
@@ -239,6 +242,9 @@ def startup_calibration(voiceno):
 
 
 calibrate_voices()
+
+for v in VOICES:
+    v.assign_filter_fitter()  # now fitters are calibrated we can tell the voices which to use
 
 while 1:
 
@@ -284,6 +290,7 @@ while 1:
     # process the note queue
     new_note = NOTE_QUEUE.get()
     while new_note:  # set up tuning of the new note
+        # TODO - move DCO configuration into the voice class
         # print(new_note)
         midinote = new_note & 255
         voice = new_note >> 8
@@ -294,6 +301,7 @@ while 1:
         DAC_MESSAGES.set(voice, DAC_INTEGRATOR, voltage)
         #print("integrator message", voice, DAC_INTEGRATOR, voltage)
         OSC.put(wavecount)
+        VOICES[voice].held_note = midinote
 
         #print(f"For note {midinote} voice {voice} voltages were {coarse}, {fine}")
 
@@ -319,9 +327,10 @@ while 1:
             #time.sleep(0.001)
             cutoff = DAC_MESSAGES.get(v, 8)
             #time.sleep(0.001)
+            #print("sending cof value", cutoff)
             send_dac_value_mcp(0, cutoff)  # this bus voltage will be sampled by the voice card during the time when its
             # chip select is brought low
-            time.sleep(0.001)
+            time.sleep(0.001)  # TODO: can we get away from this sleep!??!
             ADDRESS_MANAGER.put(v)
 
         chan = 0

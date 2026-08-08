@@ -1,6 +1,6 @@
 from voice2 import Voice
 from mydacs import DAC_MESSAGES
-from omni import VOICE_PARAMS
+from omni import VOICE_PARAMS, FILTER_V_OCT
 from ADSR3 import ADSRS
 from LFO2 import LFOS
 VOICES = []  # this will be replaced by a voice list passed from the main module
@@ -97,7 +97,7 @@ def set_lfo_shape(value):
 def set_filter_cutoff(dac_channel, value):
 
     print("filter cof set", value)
-    VOICE_PARAMS[dac_channel] = value  # filter is backwards: higher voltage = more open
+    VOICE_PARAMS[dac_channel] = value
 
 def parameter_select(value):
 
@@ -109,6 +109,16 @@ def parameter_select(value):
 
     SELECTED_PARAMETER = spl[sp]
     print(PARAMETER_NAMES[SELECTED_PARAMETER], " selected for changes.")
+
+def set_filter_tracking(value):
+
+    """Scales the contribution of volts/octave tracking to the filter cutoff. Full = tracking is proportional
+    to the played note. Zero = filter CoF is static across all notes."""
+
+    global FILTER_V_OCT  # why appears undefined??
+    FILTER_V_OCT = value + 511
+
+    print("filter v oct is", FILTER_V_OCT)
 
 def wave_select(v):
 
@@ -125,6 +135,7 @@ option_lists = {"shape":["SAW", "RAMP", "TRI", "SINE", "SHARK"],
 CONTROL_FUNCTIONS = [-1] * 128
 
 CONTROL_FUNCTIONS[19] = parameter_select  # doesn't need to be a lambda func because it just takes the knob value
+CONTROL_FUNCTIONS[18] = set_filter_tracking
 
 CONTROL_FUNCTIONS[73] = lambda v: set_base_parameter(DAC_SUBOCTAVE, v)
 CONTROL_FUNCTIONS[75] = lambda v: set_filter_cutoff(8, v)
