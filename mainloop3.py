@@ -27,30 +27,8 @@ from line_fitter_fixedpoint import FitterFP
 from omni import FILTER_VOLTAGE_CURVES
 
 from lcd1602 import LCD
+from ADSR3 import save_adsrs
 
-# DAC setup code
-#prepare_tune_latch()
-#ADDRESS_MANAGER.put(7)  # unused address to force all latches off
-#(2, 0)
-"""
-for x in range(10):
-    ADDRESS_MANAGER.put(1)
-    time.sleep(0.1)
-    dac_setup()  # manages reset pin
-    prepare_tune_latch()
-    send_dac_value(4, 80)
-    send_dac_value(5, 0)
-    time.sleep(0.2)
-    ADDRESS_MANAGER.put(0)
-    time.sleep(0.1)
-    dac_setup()  # manages reset pin
-    prepare_tune_latch()
-    send_dac_value(4, 80)
-    send_dac_value(5, 0)
-    time.sleep(0.2)
-
-time.sleep(20)
-"""
 
 i2c = I2C(1, scl=Pin(P_I2C_SCL), sda=Pin(P_I2C_SDA))  # for driving the LCD
 # I2C block 1 is associated with pins 26 and 27 (defined in pin assignments file)
@@ -69,31 +47,10 @@ cnt = 0
 loopcount = 0
 loopstart = time.ticks_ms()
 
-"""
-ADDRESS_MANAGER.put(0)
-time.sleep(0.1)
-dac_setup()  # manages reset pin
-prepare_tune_latch()
-
-ADDRESS_MANAGER.put(1)
-time.sleep(0.1)
-dac_setup()  # manages reset pin
-"""
 ################### END OF SETUP FUNCTIONS #######################
 
-
-
-
-  # manages values to be written to the DACs
 RUNNING = False
 NOTE_QUEUE = CustomFIFO(size=8)  # new notes we want to play. upper 4 bits: voice address, lower 8: MIDI note number
-
-######### Temporary things for data logging ###########
-#TIMES = array("I", [0] * 6096)
-#EXPECTEDS = array("I", [0] * 6096)
-#FREQS = array("i", [0] * 6096)
-
-
 
 def shut_down():
 
@@ -103,6 +60,9 @@ def shut_down():
     DAC_MESSAGES.set(1, 2, 0)
 
     time.sleep(0.5)
+
+    save_adsrs()
+    print("ADSR data saved")
 
     RUNNING = False
 
@@ -128,12 +88,11 @@ VOICES = []
 for x in range(VOICE_COUNT):
     VOICES.append(Voice(x))
 
-configure_voice_list(VOICES)  # so that the controls module can alter the properties of the voice objects
+configure_voice_list(VOICES)
 HELD_NOTES = array("B", [0] * 150)  # record which voice is playing which note
 VOICE_ALLOCATOR = VoiceAllocator(VOICE_COUNT)
 
-#from dco_controls import OSC
-
+"""
 DAC_MESSAGES.set(0, DAC_WAVESELECT, 255)
 time.sleep(0.001)
 ADDRESS_MANAGER.put(7)
@@ -142,7 +101,7 @@ send_dac_value_mcp(0, 255)
 time.sleep(0.001)
 ADDRESS_MANAGER.put(0)
 time.sleep(0.001)
-
+"""
 
 def calibrate_voices():
 
@@ -186,33 +145,6 @@ def startup_calibration(voiceno, FILTER_VOLTAGE_CURVES):
         print(q, calcurve.gety(q << 8) >> 8)  # something about precision needs these bit shifts
         # todo - just put that nonsense inside the function
         # todo - affects DAC resolution
-
-    """
-    for x in (50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 20000):
-        # print voltage required for Hz cutoff for checking purposes
-        wavetime = 1.0 / x
-        counttime = 1.0 / 10**8
-        counts = int(wavetime / counttime)
-        l = fast_log2(counts)
-        v = calcurve.getx(l) >> 8
-        print(x, "Hz", ":", v)
-    """
-
-    """
-    Example calibration:
-    Cof / DAC input
-    50 Hz : -9
-    100 Hz : 18
-    200 Hz : 44
-    400 Hz : 71
-    800 Hz : 98
-    1600 Hz : 125
-    3200 Hz : 151
-    6400 Hz : 178
-    12800 Hz : 205
-    20000 Hz : 222
-    
-    """
 
 
 calibrate_voices()  # set up filter curves
@@ -308,16 +240,3 @@ while 1:
             # write a "dummy" message to the DAC so that the cutoff control voltage can be sampled
             send_dac_value(5, 0)  # channel 5 is unused and unconnected, so harmlessly write to it
             # which induces a chip select toggle
-            
-        #send_dac_value(7, 0)
-
-
-
-
-
-#except Exception as e:
-    #print(repr(e))
-
-#finally:
- #   pass
-    #shut_down()

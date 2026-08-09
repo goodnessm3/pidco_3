@@ -89,4 +89,33 @@ def get_frequency_counts():
     
     '''
 
+    # copied from main loop, just leftover notes:
+
+    """
+    for x in (50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 20000):
+        # print voltage required for Hz cutoff for checking purposes
+        wavetime = 1.0 / x
+        counttime = 1.0 / 10**8
+        counts = int(wavetime / counttime)
+        l = fast_log2(counts)
+        v = calcurve.getx(l) >> 8
+        print(x, "Hz", ":", v)
+    """
+
+    """
+    Example calibration:
+    Cof / DAC input
+    50 Hz : -9
+    100 Hz : 18
+    200 Hz : 44
+    400 Hz : 71
+    800 Hz : 98
+    1600 Hz : 125
+    3200 Hz : 151
+    6400 Hz : 178
+    12800 Hz : 205
+    20000 Hz : 222
+
+    """
+
 

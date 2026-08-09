@@ -6,23 +6,42 @@ from settings import VOICE_COUNT
 
 class LinearADSR:
 
-    def __init__(self):
+    def __init__(self, a=300, d=1000, s=20000, r=450, depth=0, inverted=0):
+
+        print("made ADSR with args ", a, d, s, r, depth, inverted)
 
         self.max_level = 65535
-        self.sustain_level = 20000
-        self.depth = 0
+        self.sustain_level = s
+        self.depth = depth
 
         self.rates = array("i", [0] * 5)  # how much we should increment/decrement the bucket per millisecond
+        self.raw_rates = array("I", [0] * 5)  # for saving and loading
 
-        self.set_rate(1, 300)  # a
-        self.set_rate(2, 1000)  # d
-        self.set_rate(4, 450)  # r
+        self.set_rate(1, a)
+        self.set_rate(2, d)
+        self.set_rate(4, r)
 
         self.phase = 0  # 0 = quiescent, 1 = atk, 2, dky, 3 = sus, 4 = rel. These are used as array indices
         self.last_called = time.ticks_ms()
         self.bucket = 0
 
-        self.inverted = False
+        self.inverted = inverted == 1  # need to pass the argument as 1/0 so it can be written out to a file
+
+    def export(self):
+
+        """Generate a tuple of args that can be used to reinstantiate this object with the same properties"""
+
+        if self.inverted:
+            inv = 1
+        else:
+            inv = 0
+
+        return (self.raw_rates[1],
+                self.raw_rates[2],
+                self.sustain_level,
+                self.raw_rates[4],
+                self.depth,
+                inv)
 
     def set_rate(self, rate_index, time):
 
@@ -31,6 +50,8 @@ class LinearADSR:
         """These numbers specify the gradient of each phase, i.e. how much the bucket in/de-creases over 1 millisecond"""
 
         #print(f"set rate called with {time}")
+
+        self.raw_rates[rate_index] = time
 
         a = time // 5041  # divide range 0..65536 into 0..13
         q = 1 << (a + 1)  # 2 to the power of that. 2**14 = 16 seconds
@@ -74,7 +95,29 @@ class LinearADSR:
         else:
             return (self.bucket * self.depth) >> 16
 
-
 ADSRS = []
-for x in range(9 * VOICE_COUNT):  # todo - properly calculate how many and don't instantiate for unused channels
-    ADSRS.append(LinearADSR())  # address these by index, 9 per voice (COF is 9th channel, channel #8)
+
+try:
+    with open("ADSRDATA", "rb") as f:
+        print("Loading ADSR settings")
+        for x in range(9 * VOICE_COUNT):
+            accumulator = []
+            while len(accumulator) < 6:
+                raw_bytes = f.read(2)
+                val = int.from_bytes(raw_bytes, "little")
+                accumulator.append(val)
+            ADSRS.append(LinearADSR(*accumulator))  # instantiate using the args we just read in
+
+except Exception as e:
+    print(e)
+    print("Didn't find ADSR settings file, making blank ones.")
+    for x in range(9 * VOICE_COUNT):  # todo - properly calculate how many and don't instantiate for unused channels
+        ADSRS.append(LinearADSR())  # address these by index, 9 per voice (COF is 9th channel, channel #8)
+
+def save_adsrs():
+
+    with open("ADSRDATA", "wb") as f:
+        for a in ADSRS:
+            vals = a.export()
+            for v in vals:
+                f.write(v.to_bytes(2, "little"))

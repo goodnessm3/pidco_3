@@ -8,6 +8,7 @@ VOICES = []  # this will be replaced by a voice list passed from the main module
 from settings import *
 from dac_channels import *  # defines the parameter names list and the numbers for the channels
 
+
 def configure_voice_list(ls):
 
     global VOICES
@@ -61,6 +62,8 @@ def set_adsr_depth(value):
     for voice in range(VOICE_COUNT):
         ADSRS[idx + offset].depth = value  # todo - when 0, skip getting values from this ADSR
         if value > 0:
+            print("tried to update voice at index, ", voice)
+            print("Voice list is ", VOICES)
             VOICES[voice].active_adsrs |= 1 << idx  # tell the voice that it needs to query this ADSR in update()
             print(f"Voices will get updates from {parm} ASDR.")
         else:
