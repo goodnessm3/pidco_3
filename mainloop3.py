@@ -2,7 +2,7 @@ import wavecount_table
 from custom_fifo import CustomFIFO
 from settings import *  # definitions of all constants used in the code
 from pin_assignments import *
-#from machine import Pin, I2C
+from machine import Pin, I2C
 import time
 from sys import exit
 import _thread
@@ -25,6 +25,8 @@ from filter_calibration import get_frequency_counts
 from line_fitter_fixedpoint import FitterFP
 
 from omni import FILTER_VOLTAGE_CURVES
+
+from lcd1602 import LCD
 
 # DAC setup code
 #prepare_tune_latch()
@@ -49,6 +51,10 @@ for x in range(10):
 
 time.sleep(20)
 """
+
+i2c = I2C(1, scl=Pin(P_I2C_SCL), sda=Pin(P_I2C_SDA))  # for driving the LCD
+# I2C block 1 is associated with pins 26 and 27 (defined in pin assignments file)
+DISPLAY = LCD(i2c)  # set up the text display
 
 for x in range(VOICE_COUNT):
     #prepare_tune_latch()
@@ -209,10 +215,17 @@ calibrate_voices()
 for v in VOICES:
     v.assign_filter_fitter()  # now fitters are calibrated we can tell the voices which to use
 
+from display_manager import DisplayManager
+
+DM = DisplayManager([],[],[])
+
+pair = DM.update((1,))  # get a new frame buffer for the LCD
+DISPLAY.update(pair)  # send the new frame buffer for display next loop
+
 while 1:
 
     loopcount += 1
-    #DISPLAY.draw_screen()
+    DISPLAY.draw_screen()
     MR.read()  # induce the MidiReader to compile messages to read out
 
     while 1:
@@ -249,26 +262,10 @@ while 1:
     # process the note queue
     new_note = NOTE_QUEUE.get()
     while new_note:  # set up tuning of the new note
-        # TODO - move DCO configuration into the voice class
-        # print(new_note)
+
         midinote = new_note & 255
         voice = new_note >> 8
-        #print("getting integrator voltage for ", voice, midinote)
-
         VOICES[voice].set_note(midinote)
-
-        # all the below is now moved into the voice class
-
-        #voltage = wavecount_table.get_note_voltage(voice, midinote)
-        #wavecount = wavecount_table.get_note_sm_value(midinote)
-
-        #DAC_MESSAGES.set(voice, DAC_INTEGRATOR, voltage)
-
-        #OSC.put(wavecount)
-        #VOICES[voice].held_note = midinote
-
-        #print(f"For note {midinote} voice {voice} voltages were {coarse}, {fine}")
-
         new_note = NOTE_QUEUE.get()
 
     for v in VOICES:
@@ -279,11 +276,6 @@ while 1:
 
         todo = DAC_MESSAGES.get_dirty(v)  # only update the values that have changed
         # this is a number where each bit denotes the DAC channel to be updated
-        #print(todo)
-
-        ##########
-        # todo LISTINDEX error with ADSR on cof
-        #########
 
         if todo:  # need to send the messages to this DAC, if not to do then we will skip the while loop, send nowt
             #time.sleep(0.001)
@@ -294,7 +286,7 @@ while 1:
             #print("sending cof value", cutoff)
             send_dac_value_mcp(0, cutoff)  # this bus voltage will be sampled by the voice card during the time when its
             # chip select is brought low
-            time.sleep(0.001)  # TODO: can we get away from this sleep!??!
+            time.sleep(0.0001)  # TODO: can we get away from this sleep!??!
             ADDRESS_MANAGER.put(v)
 
         chan = 0
