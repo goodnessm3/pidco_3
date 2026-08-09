@@ -213,12 +213,6 @@ def send_dac_fraction(dac, val):
     v = floor(val * 255)
     send_dac_value(dac, v)
 
-def prepare_tune_latch():
-
-    # the next time chip select is lowered, tune latch signal will be sent to all the voices
-    # so the voice we are addressing stores the tune bit, and everything else stores nothing because not selected
-    TUNE_LATCH_MANAGER.put(1)  # just putting something in the FIFO causes the pio program to advance
-
 
 class DacMessages:
 

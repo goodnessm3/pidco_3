@@ -5,3 +5,4 @@ __pycache__/
 *.ipynb
 desktop.ini
 *.txt
+manual_control.py

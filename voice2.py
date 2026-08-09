@@ -6,6 +6,8 @@ import omni
 from dac_channels import *
 from fastlog2 import fast_log2
 from settings import *
+from dco_controls import DCO_STATE_MACHINE_GENERATOR
+import wavecount_table
 
 class GlobalMods:
 
@@ -43,6 +45,7 @@ class Voice:
         self.cutoff_freq_tracking = cutoff_freq_tracking  # TODO: configurable later
         self.active_adsrs = 2  # this is a bitmask that tells us which ADSRs to query. Default just to VCA.
         self.active_lfos = 0
+        self.oscillator = next(DCO_STATE_MACHINE_GENERATOR)
 
         #for x in range(8):
             #self.adsrs.append(LinearADSR())
@@ -77,6 +80,14 @@ class Voice:
         if self.key_counter == 0:  # need this otherwise an old key up event will un-gate a newer note
             for x in self.adsrs:
                 x.gate(False)
+
+    def set_note(self, midinote):
+
+        self.held_note = midinote
+        voltage = wavecount_table.get_note_voltage(self.address, midinote)
+        wavecount = wavecount_table.get_note_sm_value(midinote)
+        DAC_MESSAGES.set(self.address, DAC_INTEGRATOR, voltage)
+        self.oscillator.put(wavecount)
 
     def update(self):
 

@@ -126,7 +126,7 @@ configure_voice_list(VOICES)  # so that the controls module can alter the proper
 HELD_NOTES = array("B", [0] * 150)  # record which voice is playing which note
 VOICE_ALLOCATOR = VoiceAllocator(VOICE_COUNT)
 
-from dco_controls import OSC  # todo - make better, multiple, etc
+#from dco_controls import OSC
 
 DAC_MESSAGES.set(0, DAC_WAVESELECT, 255)
 time.sleep(0.001)
@@ -211,9 +211,6 @@ for v in VOICES:
 
 while 1:
 
-    #if PLAYING:
-        #print(get_frequency())
-
     loopcount += 1
     #DISPLAY.draw_screen()
     MR.read()  # induce the MidiReader to compile messages to read out
@@ -233,7 +230,6 @@ while 1:
             NOTE_QUEUE.put(note | (voice << 8))
             VOICES[voice].key_down()
             HELD_NOTES[note] = voice
-            PLAYING = True  # TEMPORARY testing thing for freq measure
         else:
             voice_index = HELD_NOTES[note]
             VOICES[voice_index].key_up()
@@ -258,13 +254,18 @@ while 1:
         midinote = new_note & 255
         voice = new_note >> 8
         #print("getting integrator voltage for ", voice, midinote)
-        voltage = wavecount_table.get_note_voltage(voice, midinote)
-        wavecount = wavecount_table.get_note_sm_value(midinote)
 
-        DAC_MESSAGES.set(voice, DAC_INTEGRATOR, voltage)
-        #print("integrator message", voice, DAC_INTEGRATOR, voltage)
-        OSC.put(wavecount)
-        VOICES[voice].held_note = midinote
+        VOICES[voice].set_note(midinote)
+
+        # all the below is now moved into the voice class
+
+        #voltage = wavecount_table.get_note_voltage(voice, midinote)
+        #wavecount = wavecount_table.get_note_sm_value(midinote)
+
+        #DAC_MESSAGES.set(voice, DAC_INTEGRATOR, voltage)
+
+        #OSC.put(wavecount)
+        #VOICES[voice].held_note = midinote
 
         #print(f"For note {midinote} voice {voice} voltages were {coarse}, {fine}")
 

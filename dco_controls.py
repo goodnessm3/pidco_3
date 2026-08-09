@@ -3,6 +3,7 @@ import time
 import math
 import rp2
 from rp2 import PIO, asm_pio
+from settings import DCO_PINS, DCO_FREQ
 
 @rp2.asm_pio(
     set_init=rp2.PIO.OUT_LOW,
@@ -28,9 +29,21 @@ def freq2count(f):
 
     if f == 0:
         return 0
-    return round(1953125.0 / f / 2)
+    return round(float(DCO_FREQ) / f / 2)
 
 # PIO blocks 6 and 7 are used for address manager and SPI, 0-5 can be for DCOs
 # block 5 will be used for the freq counter in testing mode - 08/02
-OSC = rp2.StateMachine(0, dco_signal, freq=1953125, set_base=Pin(13))
-OSC.active(1)
+#OSC = rp2.StateMachine(0, dco_signal, freq=1953125, set_base=Pin(13))
+#OSC.active(1)
+
+def dco_state_machine_generator():
+
+    idx = 0
+    p = DCO_PINS[idx]  # find the next output pin for the DCO - hard coded because hard wired
+    while idx < 5:  # todo - if we want 6-voice polyphony, need to steal the freq measurement PIO
+        sm = rp2.StateMachine(idx, dco_signal, freq=DCO_FREQ, set_base=Pin(p))
+        sm.active(1)
+        yield sm
+        idx += 1
+
+DCO_STATE_MACHINE_GENERATOR = dco_state_machine_generator()  # query this to get state machines

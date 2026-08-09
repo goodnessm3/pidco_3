@@ -137,6 +137,13 @@ CONTROL_FUNCTIONS = [-1] * 128
 
 CONTROL_FUNCTIONS[19] = parameter_select  # doesn't need to be a lambda func because it just takes the knob value
 CONTROL_FUNCTIONS[18] = set_filter_tracking
+#CONTROL_FUNCTIONS[21] = play button
+#CONTROL_FUNCTIONS[22] = rec button
+#CONTROL_FUNCTIONS[24] = loop button
+#CONTROL_FUNCTIONS[25] = back arrow
+#CONTROL_FUNCTIONS[26] = forward arrow
+#CONTROL_FUNCTIONS[27] = metrognome button
+# 52, 54, 55 save undo redo
 
 CONTROL_FUNCTIONS[73] = lambda v: set_base_parameter(DAC_SUBOCTAVE, v)
 CONTROL_FUNCTIONS[75] = lambda v: set_filter_cutoff(8, v)
