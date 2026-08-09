@@ -185,13 +185,18 @@ def startup_calibration(voiceno, FILTER_VOLTAGE_CURVES):
     for q in (220, 200, 150, 120, 100):
         print(q, calcurve.gety(q << 8) >> 8)  # something about precision needs these bit shifts
         # todo - just put that nonsense inside the function
-    for x in (50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 20000):  # print voltage required for Hz cutoff
+        # todo - affects DAC resolution
+
+    """
+    for x in (50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 20000):
+        # print voltage required for Hz cutoff for checking purposes
         wavetime = 1.0 / x
         counttime = 1.0 / 10**8
         counts = int(wavetime / counttime)
         l = fast_log2(counts)
         v = calcurve.getx(l) >> 8
         print(x, "Hz", ":", v)
+    """
 
     """
     Example calibration:
@@ -210,7 +215,7 @@ def startup_calibration(voiceno, FILTER_VOLTAGE_CURVES):
     """
 
 
-calibrate_voices()
+calibrate_voices()  # set up filter curves
 
 for v in VOICES:
     v.assign_filter_fitter()  # now fitters are calibrated we can tell the voices which to use

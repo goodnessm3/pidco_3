@@ -22,6 +22,8 @@ class LinearADSR:
         self.last_called = time.ticks_ms()
         self.bucket = 0
 
+        self.inverted = False
+
     def set_rate(self, rate_index, time):
 
         """a = 1, d = 2, r = 3. Time = the length of the phase in milliseconds from max to min"""
@@ -67,7 +69,10 @@ class LinearADSR:
             self.bucket = 0
             self.phase = 0
 
-        return (self.bucket * self.depth) >> 16
+        if self.inverted:
+            return -1 * ((self.bucket * self.depth) >> 16)
+        else:
+            return (self.bucket * self.depth) >> 16
 
 
 ADSRS = []

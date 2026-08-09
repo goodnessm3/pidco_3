@@ -42,7 +42,8 @@ def set_sustain_level(value):
 
     idx = SELECTED_PARAMETER
     offset = 0
-    for _ in range(4):
+    for _ in range(VOICE_COUNT):
+        print(offset)
         ADSRS[idx + offset].sustain_level = value
         offset += 8  # need to update 4 ADSRs, one per voice
 
@@ -126,6 +127,19 @@ def wave_select(v):
     if v:  # button down = 65024. Button up = 0 which will evaluate to False
         omni.VOICE_PARAMS[DAC_WAVESELECT] ^= 65535  # toggle between 0 or 5 V, remember internally it's 16 bit
 
+def invert_envelope(v):
+
+    if v:
+        offset = 0
+        idx = SELECTED_PARAMETER
+        parm = PARAMETER_NAMES[SELECTED_PARAMETER]
+        print(f"inverting {parm} ADSR")
+        # this will be read from the state of which parameter we selected from the param select knob
+        for voice in range(VOICE_COUNT):
+            c = ADSRS[idx + offset].inverted
+            ADSRS[idx + offset].inverted = not c
+            offset += 8  # need to update ADSRs one per voice
+
 
 
 option_lists = {"shape":["SAW", "RAMP", "TRI", "SINE", "SHARK"],
@@ -139,7 +153,7 @@ CONTROL_FUNCTIONS[19] = parameter_select  # doesn't need to be a lambda func bec
 CONTROL_FUNCTIONS[18] = set_filter_tracking
 #CONTROL_FUNCTIONS[21] = play button
 #CONTROL_FUNCTIONS[22] = rec button
-#CONTROL_FUNCTIONS[24] = loop button
+CONTROL_FUNCTIONS[24] = invert_envelope  # loop button
 #CONTROL_FUNCTIONS[25] = back arrow
 #CONTROL_FUNCTIONS[26] = forward arrow
 #CONTROL_FUNCTIONS[27] = metrognome button
