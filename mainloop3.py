@@ -24,10 +24,14 @@ time.sleep(1)
 from filter_calibration import get_frequency_counts
 from line_fitter_fixedpoint import FitterFP
 
-from omni import FILTER_VOLTAGE_CURVES
+#from omni import FILTER_VOLTAGE_CURVES
+import omni
 
 from lcd1602 import LCD
-from ADSR3 import save_adsrs
+# importing these modules creates the LFO and ADSR lists and loads the settings in from a saved file if it exists
+import ADSR3
+import LFO2
+
 
 
 i2c = I2C(1, scl=Pin(P_I2C_SCL), sda=Pin(P_I2C_SDA))  # for driving the LCD
@@ -61,8 +65,12 @@ def shut_down():
 
     time.sleep(0.5)
 
-    save_adsrs()
+    ADSR3.save_adsrs()
     print("ADSR data saved")
+    LFO2.save_lfos()
+    print("LFO data saved")
+    omni.save_omni()
+    print("Generic data saved")
 
     RUNNING = False
 
@@ -86,7 +94,8 @@ MR = MidiReader()
 CONTROLS = Controls()
 VOICES = []
 for x in range(VOICE_COUNT):
-    VOICES.append(Voice(x))
+    VOICES.append(Voice(x, ADSR3.ACTIVE_ADSRS, LFO2.ACTIVE_LFOS))
+    # we pass in the bitmasks to tell the voices which mod sources to pay attention to on startup
 
 configure_voice_list(VOICES)
 HELD_NOTES = array("B", [0] * 150)  # record which voice is playing which note
@@ -106,7 +115,7 @@ time.sleep(0.001)
 def calibrate_voices():
 
     for x in range(VOICE_COUNT):
-        startup_calibration(x, FILTER_VOLTAGE_CURVES=FILTER_VOLTAGE_CURVES)
+        startup_calibration(x, FILTER_VOLTAGE_CURVES=omni.FILTER_VOLTAGE_CURVES)
 
 def startup_calibration(voiceno, FILTER_VOLTAGE_CURVES):
 
@@ -125,7 +134,7 @@ def startup_calibration(voiceno, FILTER_VOLTAGE_CURVES):
         send_dac_value(dest, value)
 
     time.sleep(0.001)
-    for q in (100, 200, 150, 120, 220):
+    for q in (150, 200, 175, 120, 220):
 
         ADDRESS_MANAGER.put(CUTOFF_FREQUENCY_DAC_ADDRESS)  # always 8
         send_dac_value_mcp(0, q)  # channel 0 of the 2-ch 12 bit DAC is the COF, chan 1 probably unused

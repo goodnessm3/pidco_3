@@ -28,7 +28,7 @@ except ImportError:  # for prototyping on desktop when we don't have micropython
 
 class LFO:
 
-    def __init__(self):
+    def __init__(self, rate=32768, depth=0, shapeindex=0):
 
         """set up references to all of the various function lookup tables"""
 
@@ -41,17 +41,18 @@ class LFO:
 
         self.shapenames = ["SAW", "RAMP", "TRIANGLE", "SINE"]
         self.shape_name = "SAW"  # for pretty printing
-        self.raw_shape_index = 0  # need the number too for serializing/deserializing
+        self.raw_shape_index = shapeindex  # need the number too for serializing/deserializing
 
         self.shapes = [self.saw, self.ramp, self.tri, self.sine]  # so we can refer to them by index
-        self._shape = self.saw  # default
+        #self._shape = self.saw  # default
+        self.shape = shapeindex  # the setter method converts this to an actual reference to a shape
         self.array_length = len(self._shape)  # NOTE - assumes all wavetables have the same resolution
 
-        self.rate = 32768  # default value - internally we use 16 bit rather than 8 for finer grained resolution
+        self.rate = rate  # default value - internally we use 16 bit rather than 8 for finer grained resolution
         self.divisor = 0
         self.set_divisor()
 
-        self.depth = 65535 # default to maximum modulation
+        self.depth = depth # default to maximum modulation
 
         self.last = ticks_us()  # what was the last time we got a value? use this to determine how far to progress the array index
         self.current_index = 0  # record the level we sent last so we can smoothly change parameters without causing a stutter in the output
@@ -60,12 +61,7 @@ class LFO:
 
         # TODO: can we have a generic export/import method in a super class?
 
-        out = []
-        out.append(self.rate)
-        out.append(self.depth)
-        out.append(self.raw_shape_index)
-
-        return out
+        return self.rate, self.depth, self.raw_shape_index
 
     def load(self, ls):
 
@@ -150,5 +146,34 @@ class LFO:
         return line1, line2
 
 LFOS = []
-for x in range(9 * VOICE_COUNT):  # todo - properly calculate how many and don't instantiate for unused channels
-    LFOS.append(LFO())  # one per parameter, shared by all voices
+ACTIVE_LFOS = 0  # assemble a bitmask on loading where lfos with depth > 0 are set to 1. This tells the voices
+# which LFOs to query
+
+try:
+    with open("LFODATA.bin", "rb") as f:
+        print("Loading LFO settings")
+        for x in range(9):
+            accumulator = []
+            while len(accumulator) < 3:
+                raw_bytes = f.read(2)
+                val = int.from_bytes(raw_bytes, "little")
+                accumulator.append(val)
+
+            if accumulator[1] > 0:  # depth is set and we want to use this mod source
+                ACTIVE_LFOS |= 1 << x
+
+            LFOS.append(LFO(*accumulator))
+
+except Exception as e:
+    print(e)
+    print("Didn't find LFO settings, making blank ones.")
+    for x in range(9):  # todo - properly calculate how many and don't instantiate for unused channels
+        LFOS.append(LFO())  # one per parameter, shared by all voices
+
+def save_lfos():
+
+    with open("LFODATA.bin", "wb") as f:
+        for l in LFOS:
+            vals = l.export()
+            for v in vals:
+                f.write(v.to_bytes(2, "little"))

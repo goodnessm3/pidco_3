@@ -96,9 +96,10 @@ class LinearADSR:
             return (self.bucket * self.depth) >> 16
 
 ADSRS = []
+ACTIVE_ADSRS = 0  # assemble a bitmask on loading
 
 try:
-    with open("ADSRDATA", "rb") as f:
+    with open("ADSRDATA.bin", "rb") as f:
         print("Loading ADSR settings")
         for x in range(9 * VOICE_COUNT):
             accumulator = []
@@ -106,6 +107,11 @@ try:
                 raw_bytes = f.read(2)
                 val = int.from_bytes(raw_bytes, "little")
                 accumulator.append(val)
+
+            if accumulator[4] > 0:  # depth is set, need to tell the voices to use this source
+                ACTIVE_ADSRS |= 1 << x  # this gets written multiple times but doesn't really matter unless one day
+                # we want different voices to have different settings.
+
             ADSRS.append(LinearADSR(*accumulator))  # instantiate using the args we just read in
 
 except Exception as e:
@@ -116,7 +122,7 @@ except Exception as e:
 
 def save_adsrs():
 
-    with open("ADSRDATA", "wb") as f:
+    with open("ADSRDATA.bin", "wb") as f:
         for a in ADSRS:
             vals = a.export()
             for v in vals:

@@ -39,12 +39,11 @@ for x in range(100):
 
 class Voice:
 
-    def __init__(self, address, cutoff_freq_tracking=True):
+    def __init__(self, address, adsrs=2, lfos=0):
 
         self.address = address
-        self.cutoff_freq_tracking = cutoff_freq_tracking  # TODO: configurable later
-        self.active_adsrs = 2  # this is a bitmask that tells us which ADSRs to query. Default just to VCA.
-        self.active_lfos = 0
+        self.active_adsrs = adsrs  # this is a bitmask that tells us which ADSRs to query. Default just to VCA.
+        self.active_lfos = lfos
         self.oscillator = next(DCO_STATE_MACHINE_GENERATOR)
 
         #for x in range(8):
