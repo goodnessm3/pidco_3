@@ -1,9 +1,13 @@
 from machine import Pin, I2C
 import time
-
+from array import array
+from custom_fifo import CustomFIFO
 
 class LCD:
-    def __init__(self, i2c, addr=None, backlight_enable=1):
+    def __init__(self, i2c, topline, bottomline, addr=None, backlight_enable=1):
+
+        self.topline = topline
+        self.bottomline = bottomline
         self.bus = i2c
         self.addr = self.scanAddress(addr)
         self.backlight_enable = backlight_enable
@@ -19,10 +23,17 @@ class LCD:
         self.send_data(0x01, 0)  # Clear Screen
         self.bus.writeto(self.addr, bytearray([0x08]))
 
-        self.queue = []  # a list of characters to write out to the display. Process one of these instructions
+        #self.queue = []  # a list of characters to write out to the display. Process one of these instructions
         # per 50 microseconds
         self.last_time = time.ticks_us()  # when did we last write to the display? Must wait 50 us between instructions
         # so do nothing if we are asked to update faster than this
+
+        self.run_queue = CustomFIFO(4)
+        self.pos_queue = CustomFIFO(4)
+
+        self.pos = 0  # position in the framebuffer to start sending characters
+        self.line = 0  # top or bottom line
+        self.update_counter = 0  # decrement this until the update is finished, then look for a new position
 
     def scanAddress(self, addr):
 
@@ -41,7 +52,7 @@ class LCD:
         else:
             raise Exception("No LCD found")
 
-    def update(self, lists):
+    def update_old(self, lists):
 
         """Given the two lists of (position, chars) from the DisplayManager class, update internal queue
         accordingly"""
@@ -54,19 +65,50 @@ class LCD:
 
         #print(self.queue)
 
+    def update(self, pos, length):
+
+        """Tell the display to start writing length characters starting at position pos.
+        Positions in bottom line are from 16 to 31."""
+
+        self.run_queue.put(length)
+        self.pos_queue.put(pos)
+
     def draw_screen(self):
 
         delta = time.ticks_diff(time.ticks_us(), self.last_time)
         if delta < 50:
             print("too soon!")
             return
-        try:
-            cmd = self.queue.pop(0)
-        except IndexError:
-            return
+
+        if self.update_counter == 0:  # we finished the last update, time to get a new one
+            runlen = self.run_queue.get()
+            if not runlen:
+                return
+
+            self.pos = self.pos_queue.get()
+
+            if self.pos > 15:
+                self.line = 1
+                self.pos -= 15
+            else:
+                self.line = 0
+
+            self.update_counter = runlen
+            self.send_data(0x80 + 0x40 * self.line + self.pos, 0)
+
+        if self.line == 0:
+            letter = self.topline[self.pos]
+        else:
+            letter = self.bottomline[self.pos]
+
+        flag = 1  # todo - deal with zeros, need to get bits from self.cmd_flag_queue
+
         # might be nothing to do in which case we just popped from an empty list
         #print(dat, cmd)
-        self.send_data(*cmd)
+        self.send_data(letter, flag)
+
+        self.pos += 1
+        self.update_counter -= 1
         self.last_time = time.ticks_us()
 
 

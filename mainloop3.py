@@ -180,44 +180,36 @@ for v in VOICES:
     v.assign_filter_fitter()  # now fitters are calibrated we can tell the voices which to use
 
 
+print("LCD setting up")
 
-def lcd_loop():
+from display_manager import DisplayManager
+from lcd1602 import LCD
 
-    global RUNNING
+i2c = I2C(1, scl=Pin(P_I2C_SCL), sda=Pin(P_I2C_SDA))  # for driving the LCD
+# I2C block 1 is associated with pins 26 and 27 (defined in pin assignments file)
 
-    print("LCD loop setting up")
+topl = array("B", list([ord(x) for x in "abcdefghabcdefgh"]))
+bl = array("B", list([ord(x) for x in "abcdefgha123efgh"]))
 
-    from display_manager import DisplayManager
-    from lcd1602 import LCD
+DISPLAY = LCD(i2c, topl, bl)  # set up the text display
 
-    i2c = I2C(1, scl=Pin(P_I2C_SCL), sda=Pin(P_I2C_SDA))  # for driving the LCD
-    # I2C block 1 is associated with pins 26 and 27 (defined in pin assignments file)
-    DISPLAY = LCD(i2c)  # set up the text display
+#DM = DisplayManager()
+#pair = DM.update()  # get a new frame buffer for the LCD
+DISPLAY.update(0, 5)  # send the new frame buffer for display next loop
 
-
-
-    DM = DisplayManager()
-    pair = DM.update()  # get a new frame buffer for the LCD
-    DISPLAY.update(pair)  # send the new frame buffer for display next loop
-
-    print("Entering LCD loop")
-
-    while RUNNING:
-        time.sleep(1)
-        pair = DM.update()  # get a new frame buffer for the LCD
-        DISPLAY.update(pair)  # send the new frame buffer for display next loop
-        DISPLAY.draw_screen()
-
-    print("LCD loop exited")
-
-# set the LCD running before entering main program loop
-RUNNING = True
-_thread.start_new_thread(lcd_loop, ())
+import random
 
 while 1:
 
     loopcount += 1
-    #DISPLAY.draw_screen()
+
+    DISPLAY.draw_screen()
+    if random.randint(0,100) == 50:
+        ri = random.randint(0,28)
+        while ri == 14 or ri == 15:
+            ri = random.randint(0, 28)
+        DISPLAY.update(ri ,2)
+
     MR.read()  # induce the MidiReader to compile messages to read out
 
     while 1:

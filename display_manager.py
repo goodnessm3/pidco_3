@@ -27,6 +27,7 @@ class DisplayManager:
 
     def update(self):
 
+        # SLOW!!!!!!!!!!
         #line1, line2 = self.get_lines(update_tup)
 
         line1 = array("B", list([ord(x) for x in next(LG)]))
