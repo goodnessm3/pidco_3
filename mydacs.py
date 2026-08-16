@@ -221,7 +221,7 @@ class DacMessages:
     def __init__(self):
 
         self.messages = array("B", [0] * 6 * 9)  # 9 channels on 6 dacs - 9th channel is the shared COF DAC
-        self.dirty = 0
+        self.dirty = 0  # 9 bits per voice
 
     def set(self, dac, channel, val):
 

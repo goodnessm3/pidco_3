@@ -45,5 +45,6 @@ def dco_state_machine_generator():
         sm.active(1)
         yield sm
         idx += 1
+        p = DCO_PINS[idx]
 
 DCO_STATE_MACHINE_GENERATOR = dco_state_machine_generator()  # query this to get state machines

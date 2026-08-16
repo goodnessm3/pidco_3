@@ -1,6 +1,7 @@
 from settings import VOICE_COUNT
 from wavetables import SAW, RAMP, TRI, SINE
 from myutils import listindex, fpmult
+import random
 
 try:
     from time import ticks_us, ticks_diff
@@ -24,6 +25,9 @@ except ImportError:  # for prototyping on desktop when we don't have micropython
         """So it looks like the time library we are using"""
 
         return a - b
+
+
+
 
 
 class LFO:

@@ -19,11 +19,11 @@ for q in range(VOICE_COUNT):
     for x in range(97):
         freq = round(A1 * 2**(x/12.0), 2)
         NOTES[x + 33] = freq  # store freq for diagnostic purposes but probably not used in any calculations
-        NOTE_VOLTAGES[x + 33] = int(freq/max_freq * 255)  # take this freq as a proportion of the max freq
-        # and the integrator voltage scales linearly.
+        NOTE_VOLTAGES[x + 33 + q * ARR_LENGTH] = int(freq/max_freq * 255)
+        # take this freq as a proportion of the max freq and the integrator voltage scales linearly.
 
         cnt = freq2count(freq)
-        NOTE_COUNTS[x+33] = cnt
+        NOTE_COUNTS[x+33] = cnt  # todo: we are redundantly writing these once per voice
 
 
 def get_note_voltage(voice, note):

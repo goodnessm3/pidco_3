@@ -48,13 +48,13 @@ class Voice:
 
         #for x in range(8):
             #self.adsrs.append(LinearADSR())
-        self.adsrs = ADSRS[address * 8: address * 8 + 9]  # todo - memoryview?????
+        self.adsrs = ADSRS[address * 9: address * 9 + 9]  # todo - memoryview?????
         self.lfos = LFOS
 
         self.filter_fitter = None  # calculate volts per octave
         #print(self.adsrs)
 
-        self.base_values = array("H", [0] * 8)  # class-level parameters set by hardware sliders. Add our modulations
+        #self.base_values = array("H", [0] * 8)  # class-level parameters set by hardware sliders. Add our modulations
         # e.g. ADSRs and per-voice LFOs, to these variables
 
         self.key_counter = 0  # rather than true or false we need to increment/decrement a counter for "key rollover"
@@ -86,6 +86,7 @@ class Voice:
         voltage = wavecount_table.get_note_voltage(self.address, midinote)
         wavecount = wavecount_table.get_note_sm_value(midinote)
         DAC_MESSAGES.set(self.address, DAC_INTEGRATOR, voltage)
+        #print(f"voice {self.address} sent {voltage} to its integrator")
         self.oscillator.put(wavecount)
 
     def update(self):

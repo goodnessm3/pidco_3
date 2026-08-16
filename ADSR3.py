@@ -95,13 +95,13 @@ class LinearADSR:
         else:
             return (self.bucket * self.depth) >> 16
 
-ADSRS = []
+ADSRS = [None] * 9 * VOICE_COUNT
 ACTIVE_ADSRS = 0  # assemble a bitmask on loading
 
 try:
     with open("ADSRDATA.bin", "rb") as f:
         print("Loading ADSR settings")
-        for x in range(9 * VOICE_COUNT):
+        for x in range(9):
             accumulator = []
             while len(accumulator) < 6:
                 raw_bytes = f.read(2)
@@ -112,7 +112,11 @@ try:
                 ACTIVE_ADSRS |= 1 << x  # this gets written multiple times but doesn't really matter unless one day
                 # we want different voices to have different settings.
 
-            ADSRS.append(LinearADSR(*accumulator))  # instantiate using the args we just read in
+            offset = 0
+            for _ in range(VOICE_COUNT):
+                ADSRS[x + offset] = LinearADSR(*accumulator)  # instantiate using the args we just read in
+                print(f"at offset {offset}, made an ADSR with these args: ", accumulator)
+                offset += 9
 
 except Exception as e:
     print(e)

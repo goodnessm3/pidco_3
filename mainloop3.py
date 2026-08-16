@@ -33,16 +33,21 @@ import ADSR3
 import LFO2
 
 
+### LCD SETUP ###
 
+"""
 i2c = I2C(1, scl=Pin(P_I2C_SCL), sda=Pin(P_I2C_SDA))  # for driving the LCD
 # I2C block 1 is associated with pins 26 and 27 (defined in pin assignments file)
 DISPLAY = LCD(i2c)  # set up the text display
+"""
 
 for x in range(VOICE_COUNT):
     #prepare_tune_latch()
+    time.sleep(0.1)
     ADDRESS_MANAGER.put(x)
     time.sleep(0.1)
     dac_setup()  # manages reset pin
+    time.sleep(0.1)
 
 
 ################### TESTING SETUP CODE #######################
@@ -115,6 +120,12 @@ time.sleep(0.001)
 def calibrate_voices():
 
     for x in range(VOICE_COUNT):
+        ADDRESS_MANAGER.put(x)
+        time.sleep(0.0001)
+        send_dac_value(DAC_VCA, 0)  # make sure all voices are muted before tuning starts
+        time.sleep(0.0001)
+
+    for x in range(VOICE_COUNT):
         startup_calibration(x, FILTER_VOLTAGE_CURVES=omni.FILTER_VOLTAGE_CURVES)
 
 def startup_calibration(voiceno, FILTER_VOLTAGE_CURVES):
@@ -123,6 +134,7 @@ def startup_calibration(voiceno, FILTER_VOLTAGE_CURVES):
     FILTER_VOLTAGE_CURVES[voiceno] = calcurve
 
     ADDRESS_MANAGER.put(voiceno)
+    print("addressing voice # ", voiceno)
     calibration_messages = [(DAC_VCA, 255),  # VCA fully open
                             (DAC_PWM, 127),  # PWM comparator at half
                             (DAC_RESONANCE, 255),  # full self resonance to calibrate filter response
@@ -138,6 +150,7 @@ def startup_calibration(voiceno, FILTER_VOLTAGE_CURVES):
 
         ADDRESS_MANAGER.put(CUTOFF_FREQUENCY_DAC_ADDRESS)  # always 8
         send_dac_value_mcp(0, q)  # channel 0 of the 2-ch 12 bit DAC is the COF, chan 1 probably unused
+        print(f"sent voltage {q} to cutoff dac")
         time.sleep(0.001)
         ADDRESS_MANAGER.put(voiceno)
         send_dac_value(DAC_DUMMY, 0)  # force a new sample of the COF voltage by asserting chip select
@@ -155,6 +168,18 @@ def startup_calibration(voiceno, FILTER_VOLTAGE_CURVES):
         # todo - just put that nonsense inside the function
         # todo - affects DAC resolution
 
+    # now clean up so the voices don't interfere with each other
+    ADDRESS_MANAGER.put(voiceno)
+    calibration_messages = [(DAC_VCA, 0),  # VCA closed
+                            (DAC_PWM, 127),  # PWM comparator at half
+                            (DAC_RESONANCE, 0),  # turn off resonance
+                            ]
+
+    for msg in calibration_messages:
+        dest, value = msg
+        time.sleep(0.001)
+        send_dac_value(dest, value)
+
 
 calibrate_voices()  # set up filter curves
 
@@ -163,15 +188,15 @@ for v in VOICES:
 
 from display_manager import DisplayManager
 
-DM = DisplayManager([],[],[])
+#DM = DisplayManager([],[],[])  # todo - args will change with total rewrite of this class
 
-pair = DM.update((1,))  # get a new frame buffer for the LCD
-DISPLAY.update(pair)  # send the new frame buffer for display next loop
+#pair = DM.update((1,))  # get a new frame buffer for the LCD
+#DISPLAY.update(pair)  # send the new frame buffer for display next loop
 
 while 1:
 
     loopcount += 1
-    DISPLAY.draw_screen()
+    #DISPLAY.draw_screen()
     MR.read()  # induce the MidiReader to compile messages to read out
 
     while 1:
@@ -240,7 +265,7 @@ while 1:
             #print("todo lopp")
             if todo & 1:
                 val = DAC_MESSAGES.get(v, chan)
-                # print(f"sending {val} to {chan} on dac {v}")
+                print(f"sending {val} to {chan} on dac {v}")
                 send_dac_value(chan, val)  # puts the message into the state machine FIFO
             todo >>= 1
             chan += 1

@@ -11,6 +11,8 @@ from dac_channels import *  # defines the parameter names list and the numbers f
 
 def configure_voice_list(ls):
 
+    # todo - address the global level list directly rather than going through this function
+
     global VOICES
 
     VOICES = ls
@@ -36,7 +38,7 @@ def set_adr(param, value):
     for _ in range(VOICE_COUNT):
         print(idx, offset)
         ADSRS[idx + offset].set_rate(param, value)
-        offset += 8  # need to update 4 ADSRs, one per voice
+        offset += 9  # need to update 4 ADSRs, one per voice
 
 
 def set_sustain_level(value):
@@ -46,7 +48,7 @@ def set_sustain_level(value):
     for _ in range(VOICE_COUNT):
         print(offset)
         ADSRS[idx + offset].sustain_level = value
-        offset += 8  # need to update 4 ADSRs, one per voice
+        offset += 9  # need to update 4 ADSRs, one per voice
 
 def set_base_parameter(dac_channel, value):
 
@@ -69,7 +71,7 @@ def set_adsr_depth(value):
         else:
             VOICES[voice].active_adsrs &= ~(1 << idx)  # no need to query this ADSR
             print(f"Voices will not update {parm} ASDR.")
-        offset += 8  # need to update ADSRs one per voice
+        offset += 9  # need to update ADSRs one per voice
 
 def set_lfo_rate(value):
 
@@ -141,7 +143,7 @@ def invert_envelope(v):
         for voice in range(VOICE_COUNT):
             c = ADSRS[idx + offset].inverted
             ADSRS[idx + offset].inverted = not c
-            offset += 8  # need to update ADSRs one per voice
+            offset += 9  # need to update ADSRs one per voice
 
 
 
