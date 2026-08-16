@@ -80,7 +80,8 @@ class LCD:
         for loc, chrs in ls:
             out.append((0x80 + 0x40 * line + loc, 0))  # position cursor and 0 = command, not data
             for c in chrs:
-                out.append((ord(c), 1))
+                #out.append((ord(c), 1))
+                out.append((c, 1))
 
         return out
 

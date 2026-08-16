@@ -27,19 +27,12 @@ from line_fitter_fixedpoint import FitterFP
 #from omni import FILTER_VOLTAGE_CURVES
 import omni
 
-from lcd1602 import LCD
 # importing these modules creates the LFO and ADSR lists and loads the settings in from a saved file if it exists
 import ADSR3
 import LFO2
 
 
-### LCD SETUP ###
 
-"""
-i2c = I2C(1, scl=Pin(P_I2C_SCL), sda=Pin(P_I2C_SDA))  # for driving the LCD
-# I2C block 1 is associated with pins 26 and 27 (defined in pin assignments file)
-DISPLAY = LCD(i2c)  # set up the text display
-"""
 
 for x in range(VOICE_COUNT):
     #prepare_tune_latch()
@@ -87,7 +80,7 @@ def shut_down():
     print(f"Averaged {lps} loops per second over {total_time} ms.")
     #send_dac_value(2, 0)
     print("VCA muted")
-    time.sleep(1)  # make sure other core has time to exit
+    time.sleep(2)  # make sure other core has time to exit
     print("Shutdown function finished")
 
     time.sleep(0.5)
@@ -186,12 +179,40 @@ calibrate_voices()  # set up filter curves
 for v in VOICES:
     v.assign_filter_fitter()  # now fitters are calibrated we can tell the voices which to use
 
-from display_manager import DisplayManager
 
-#DM = DisplayManager([],[],[])  # todo - args will change with total rewrite of this class
 
-#pair = DM.update((1,))  # get a new frame buffer for the LCD
-#DISPLAY.update(pair)  # send the new frame buffer for display next loop
+def lcd_loop():
+
+    global RUNNING
+
+    print("LCD loop setting up")
+
+    from display_manager import DisplayManager
+    from lcd1602 import LCD
+
+    i2c = I2C(1, scl=Pin(P_I2C_SCL), sda=Pin(P_I2C_SDA))  # for driving the LCD
+    # I2C block 1 is associated with pins 26 and 27 (defined in pin assignments file)
+    DISPLAY = LCD(i2c)  # set up the text display
+
+
+
+    DM = DisplayManager()
+    pair = DM.update()  # get a new frame buffer for the LCD
+    DISPLAY.update(pair)  # send the new frame buffer for display next loop
+
+    print("Entering LCD loop")
+
+    while RUNNING:
+        time.sleep(1)
+        pair = DM.update()  # get a new frame buffer for the LCD
+        DISPLAY.update(pair)  # send the new frame buffer for display next loop
+        DISPLAY.draw_screen()
+
+    print("LCD loop exited")
+
+# set the LCD running before entering main program loop
+RUNNING = True
+_thread.start_new_thread(lcd_loop, ())
 
 while 1:
 
@@ -265,7 +286,7 @@ while 1:
             #print("todo lopp")
             if todo & 1:
                 val = DAC_MESSAGES.get(v, chan)
-                print(f"sending {val} to {chan} on dac {v}")
+                #print(f"sending {val} to {chan} on dac {v}")
                 send_dac_value(chan, val)  # puts the message into the state machine FIFO
             todo >>= 1
             chan += 1
