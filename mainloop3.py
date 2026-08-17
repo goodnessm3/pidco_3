@@ -1,3 +1,4 @@
+import display_manager
 import wavecount_table
 from custom_fifo import CustomFIFO
 from settings import *  # definitions of all constants used in the code
@@ -182,20 +183,16 @@ for v in VOICES:
 
 print("LCD setting up")
 
-from display_manager import DisplayManager
 from lcd1602 import LCD
 
 i2c = I2C(1, scl=Pin(P_I2C_SCL), sda=Pin(P_I2C_SDA))  # for driving the LCD
 # I2C block 1 is associated with pins 26 and 27 (defined in pin assignments file)
 
-topl = array("B", list([ord(x) for x in "abcdefghabcdefgh"]))
-bl = array("B", list([ord(x) for x in "abcdefgha123efgh"]))
-
-DISPLAY = LCD(i2c, topl, bl)  # set up the text display
+DISPLAY = LCD(i2c, display_manager.TOP_LINE, display_manager.BOTTOM_LINE)  # set up the text display
 
 #DM = DisplayManager()
 #pair = DM.update()  # get a new frame buffer for the LCD
-DISPLAY.update(0, 5)  # send the new frame buffer for display next loop
+#DISPLAY.update(0, 5)  # send the new frame buffer for display next loop
 
 import random
 
@@ -204,11 +201,12 @@ while 1:
     loopcount += 1
 
     DISPLAY.draw_screen()
-    if random.randint(0,100) == 50:
-        ri = random.randint(0,28)
-        while ri == 14 or ri == 15:
-            ri = random.randint(0, 28)
-        DISPLAY.update(ri ,2)
+    if omni.DISPLAY_DIRTY:
+        pos, length = display_manager.show_parameter()
+        DISPLAY.update(pos, length)
+        omni.DISPLAY_DIRTY = False
+
+    DISPLAY.update(*display_manager.show_number())
 
     MR.read()  # induce the MidiReader to compile messages to read out
 

@@ -117,6 +117,9 @@ def parameter_select(value):
 
     SELECTED_PARAMETER = spl[sp]
     print(PARAMETER_NAMES[SELECTED_PARAMETER], " selected for changes.")
+    if not omni.DISPLAYED_PARAMETER == sp:
+        omni.DISPLAYED_PARAMETER = SELECTED_PARAMETER
+        omni.DISPLAY_DIRTY = True
 
 def set_filter_tracking(value):
 

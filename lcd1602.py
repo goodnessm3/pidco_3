@@ -28,8 +28,8 @@ class LCD:
         self.last_time = time.ticks_us()  # when did we last write to the display? Must wait 50 us between instructions
         # so do nothing if we are asked to update faster than this
 
-        self.run_queue = CustomFIFO(4)
-        self.pos_queue = CustomFIFO(4)
+        self.run_queue = CustomFIFO(16)
+        self.pos_queue = CustomFIFO(16)
 
         self.pos = 0  # position in the framebuffer to start sending characters
         self.line = 0  # top or bottom line

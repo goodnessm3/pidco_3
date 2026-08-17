@@ -1,93 +1,47 @@
 from array import array
-import random
 
-dummy_lists = ["abcdefghabcdefgh"
-               "abcdefgh123defgh",
-               "abc123ghabcdefgh",
-               "a123efghabcdefgh",
-               "abcdefgha123efgh"]
+import omni
+from dac_channels import PARAMETER_NAMES
+from mydacs import DAC_MESSAGES
+import controls
 
-def listgen():
+TOP_LINE = array("B", list([ord(" ") for x in range(16)]))  # initialize with spaces
+BOTTOM_LINE = array("B", list([ord(" ") for x in range(16)]))
+TO = 0  # where we filled the array to, so we know to overwrite
 
-    idx = 0
-    while 1:
-        yield dummy_lists[idx]
-        idx += 1
-        if idx < len(dummy_lists):
-            idx = 0
+def num2nums(num):
 
-LG = listgen()
+    """Decompose a number up to 1000 into the ASCII codes for each of its digits"""
 
-class DisplayManager:
+    first = num // 100  # hundreds digit
+    second = (num // 10) % 10  # tens digit
+    third = num % 10
 
-    def __init__(self):
+    return first+48, second+48, third+48  # offset to make printable ASCII character
 
-        self.line1 = array("B", [0] * 16)
-        self.line2 = array("B", [0] * 16)
+def show_parameter():
 
-    def update(self):
+    global TO
 
-        # SLOW!!!!!!!!!!
-        #line1, line2 = self.get_lines(update_tup)
+    old_to = TO
+    name = PARAMETER_NAMES[omni.DISPLAYED_PARAMETER]
+    TO = len(name)
+    pos = 0
+    for letter in name:
+        TOP_LINE[pos] = ord(letter)
+        pos += 1
+    while pos < 16:
+        TOP_LINE[pos] = 32  # space
+        pos += 1  # todo - more advanced way to only update "dirty" cells on the LCD
 
-        line1 = array("B", list([ord(x) for x in next(LG)]))
-        line2 = array("B", list([ord(x) for x in next(LG)]))
+    return 0, old_to
 
-        diff1 = self.diff_line(self.line1, line1)
-        diff2 = self.diff_line(self.line2, line2)
+def show_number():
 
-        #self.line1 = line1
-        #self.line2 = line2
+    v = DAC_MESSAGES.get(0, controls.SELECTED_PARAMETER)
+    a, b, c = num2nums(v)
+    BOTTOM_LINE[4] = a
+    BOTTOM_LINE[5] = b
+    BOTTOM_LINE[6] = c
 
-        return diff1, diff2  # lists of tuples [(index, run of characters)]
-        # this lets us only update the LCD characters that have changed
-
-    def get_lines(self, update_tup):
-
-        pass
-
-    def diff_line(self, old_line, new_line):
-
-        """Detect only the characters that changed"""
-
-        #while len(new_line) < len(old_line):
-            #new_line += " "  # add spaces to overwrite the longer old line
-
-        oldlen = len(old_line)
-        newlen = len(new_line)
-
-        minlen = min(oldlen, newlen)
-
-        runs = []  # start index and a run of characters that need to be replaced
-        index = 0
-
-        runstart = 0
-        run = []
-        accumulating = False
-
-        while index < minlen:
-            old = old_line[index]
-            new = new_line[index]
-
-            if old == new:
-                if run:  # don't append the empty list first time round
-                    accumulating = False
-                    runs.append((runstart, run))
-                    runstart = 0
-                    run = []
-            else:
-                if not accumulating:
-                    accumulating = True
-                    runstart = index
-                run.append(new)
-
-            index += 1
-
-        if accumulating:  # make sure we catch the run if the line was different right
-            # up until the last character
-            runs.append((runstart, run))
-
-        if oldlen < len(new_line):
-            runs.append((oldlen, new_line[oldlen:]))
-
-        return runs
+    return 3+16, 3  # +16 for bottom line

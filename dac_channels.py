@@ -12,7 +12,7 @@ DAC_COMPARATOR = 9  # the second channel of the outboard DAC used to calibrate a
 # TODO - channel 9 needs different update mechanism without the wacky chip select SnH dance
 
 PARAMETER_NAMES = ["SUB", "VCA", None, "RES", None, None, "DUTY", None, "CUTOFF"]
-# only 4 of these make sense to adjust via hardware sliders
+# only 5 of these make sense to adjust via hardware sliders
 # cutoff, the fifth, is the imaginary 8th DAC channel (actually a separate DAC)
 
-CUTOFF_FREQUENCY_DAC_ADDRESS = 7  # addressed in the same way as the boards
+CUTOFF_FREQUENCY_DAC_ADDRESS = 7  # addressed in the same way as the boards, note this is the address of the chip
