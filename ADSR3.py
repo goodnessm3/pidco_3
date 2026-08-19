@@ -8,7 +8,7 @@ class LinearADSR:
 
     def __init__(self, a=300, d=1000, s=20000, r=450, depth=0, inverted=0):
 
-        print("made ADSR with args ", a, d, s, r, depth, inverted)
+        #print("made ADSR with args ", a, d, s, r, depth, inverted)
 
         self.max_level = 65535
         self.sustain_level = s
@@ -115,7 +115,7 @@ try:
             offset = 0
             for _ in range(VOICE_COUNT):
                 ADSRS[x + offset] = LinearADSR(*accumulator)  # instantiate using the args we just read in
-                print(f"at offset {offset}, made an ADSR with these args: ", accumulator)
+                #print(f"at offset {offset}, made an ADSR with these args: ", accumulator)
                 offset += 9
 
 except Exception as e:

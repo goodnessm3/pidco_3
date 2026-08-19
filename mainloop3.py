@@ -222,6 +222,7 @@ while 1:
         if status:
             voice = VOICE_ALLOCATOR.next()
             VOICE_ALLOCATOR.key_down(voice)
+            #print(f"sending note {note} to {voice} from mainloop.")
             NOTE_QUEUE.put(note | (voice << 8))
             VOICES[voice].key_down()
             HELD_NOTES[note] = voice
@@ -276,7 +277,7 @@ while 1:
             #print("todo lopp")
             if todo & 1:
                 val = DAC_MESSAGES.get(v, chan)
-                #print(f"sending {val} to {chan} on dac {v}")
+
                 send_dac_value(chan, val)  # puts the message into the state machine FIFO
             todo >>= 1
             chan += 1

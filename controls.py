@@ -107,6 +107,7 @@ def set_filter_cutoff(dac_channel, value):
     print("filter cof set", value)
     omni.VOICE_PARAMS[dac_channel] = value
 
+"""
 def parameter_select(value):
 
     global SELECTED_PARAMETER
@@ -120,6 +121,7 @@ def parameter_select(value):
     if not omni.DISPLAYED_PARAMETER == sp:
         omni.DISPLAYED_PARAMETER = SELECTED_PARAMETER
         omni.DISPLAY_DIRTY = True
+"""
 
 def set_filter_tracking(value):
 
@@ -148,6 +150,28 @@ def invert_envelope(v):
             ADSRS[idx + offset].inverted = not c
             offset += 9  # need to update ADSRs one per voice
 
+def parameter_increment(value, direction):
+
+    if not value:
+        return
+
+    global SELECTED_PARAMETER
+    global SELECTED_PARAMETER_INDEX
+
+    spl = [0, 1, 3, 6, 8]  # valid possible DAC channels
+
+    SELECTED_PARAMETER_INDEX += direction
+    if SELECTED_PARAMETER_INDEX > 4:
+        SELECTED_PARAMETER_INDEX = 0
+    elif SELECTED_PARAMETER_INDEX < 0:
+        SELECTED_PARAMETER_INDEX = 4
+
+    SELECTED_PARAMETER = spl[SELECTED_PARAMETER_INDEX]
+    print(PARAMETER_NAMES[SELECTED_PARAMETER], " selected for changes.")
+
+    if not omni.DISPLAYED_PARAMETER == SELECTED_PARAMETER_INDEX:
+        omni.DISPLAYED_PARAMETER = SELECTED_PARAMETER
+        omni.DISPLAY_DIRTY = True
 
 
 option_lists = {"shape":["SAW", "RAMP", "TRI", "SINE", "SHARK"],
@@ -157,13 +181,13 @@ option_lists = {"shape":["SAW", "RAMP", "TRI", "SINE", "SHARK"],
 
 CONTROL_FUNCTIONS = [-1] * 128
 
-CONTROL_FUNCTIONS[19] = parameter_select  # doesn't need to be a lambda func because it just takes the knob value
+#CONTROL_FUNCTIONS[19] = parameter_select  # doesn't need to be a lambda func because it just takes the knob value
 CONTROL_FUNCTIONS[18] = set_filter_tracking
 #CONTROL_FUNCTIONS[21] = play button
 #CONTROL_FUNCTIONS[22] = rec button
 CONTROL_FUNCTIONS[24] = invert_envelope  # loop button
-#CONTROL_FUNCTIONS[25] = back arrow
-#CONTROL_FUNCTIONS[26] = forward arrow
+CONTROL_FUNCTIONS[25] = lambda v: parameter_increment(v, -1)
+CONTROL_FUNCTIONS[26] = lambda v: parameter_increment(v, 1)
 #CONTROL_FUNCTIONS[27] = metrognome button
 # 52, 54, 55 save undo redo
 
@@ -187,6 +211,7 @@ CONTROL_FUNCTIONS[83] = set_lfo_shape
 CONTROL_FUNCTIONS[20] = lambda v: wave_select(v)
 
 SELECTED_PARAMETER = 0  # this determines which LFO and ADSR we are modifying
+SELECTED_PARAMETER_INDEX = 0  # the index in the list of possible channels, not the actual channel
 
 
 class Controls:

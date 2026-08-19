@@ -87,7 +87,9 @@ class Voice:
         wavecount = wavecount_table.get_note_sm_value(midinote)
         DAC_MESSAGES.set(self.address, DAC_INTEGRATOR, voltage)
         #print(f"voice {self.address} sent {voltage} to its integrator")
+        #print(f"voice {self.address} played note {midinote}")
         self.oscillator.put(wavecount)
+        #print(f"voice {self.address} put oscillator counter {wavecount}")
 
     def update(self):
 
