@@ -42,11 +42,11 @@ def myspi():
     #label("outer")
     set(pins, 1)  # enable high -> CS low -> DAC starts listening
     irq(0)  # used to communicate with the tune latching pio, so it only toggles the latch when AEN is high
-    set(y,15)  # counter for sending 12-bit DAC instruction
+    set(y,15)  # counter for sending 16-bit DAC instruction
     label("bitloop")
     out(pins, 1).side(0) # put the data on MOSI pin and bring clock low
     nop().side(1)  # rising edge of clock so bit is read into DAC
-    jmp(y_dec, "bitloop")  # repeat until we've written 12 bits of data
+    jmp(y_dec, "bitloop")  # repeat until we've written 16 bits of data
     irq(clear, 0)
     set(pins, 0)  # enable low -> CS high -> data is latched in
 
@@ -62,18 +62,6 @@ def myspi():
 def addressmgr():
     pull()
     out(pins, 3)
-
-@asm_pio(set_init=PIO.OUT_HIGH)
-def tune_latch_manager():
-
-    pull()  # block here and only proceed if we recieved a signal that we want to store the latch bit
-    wait(1, irq, 0)  # wait for address enable to go high (tune latch "saves" the chip select status)
-    # when aen is brought high, IRQ 0 is set by the myspi PIO
-    nop() [4]
-    set(pins, 0)  # pulse the latch to store the value (logical low from pi - transistor is off, +12V at collector)
-    nop() [16]
-    set(pins, 1)
-    nop()[16]
 
 
 sm_spi = rp2.StateMachine(7, myspi, freq=1000000, out_base=Pin(P_MOSI_PIN),
@@ -176,6 +164,16 @@ def dac_setup():
 def write_to_dac(b):
 
     sm_spi.put(b << 16)  # TODO: this currently only handles a single instruction
+    # bit shift because it's a 32-bit word, but we only output 16 bits? I think?
+
+def dummy_lcd_write(q):
+
+    # 40012 = '1001110001001100'
+    # 257 = 0000000100000001  the QA outputs of both shift registers are high
+    # 1 = 0000000000000001  only the QA of the first chip is high
+    # 256 = 0000000100000000  only the QA of the second chip is high
+    # so we are sending the biggest bit first
+    sm_spi.put(q << 16)
 
 def write_to_dac_old(b):
 

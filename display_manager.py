@@ -8,6 +8,7 @@ import controls
 TOP_LINE = array("B", list([ord(" ") for x in range(16)]))  # initialize with spaces
 BOTTOM_LINE = array("B", list([ord(" ") for x in range(16)]))
 TO = 0  # where we filled the array to, so we know to overwrite
+LAST_NUMBER = 0
 
 def num2nums(num):
 
@@ -38,10 +39,16 @@ def show_parameter():
 
 def show_number():
 
-    v = DAC_MESSAGES.get(0, controls.SELECTED_PARAMETER)
-    a, b, c = num2nums(v)
-    BOTTOM_LINE[4] = a
-    BOTTOM_LINE[5] = b
-    BOTTOM_LINE[6] = c
+    global LAST_NUMBER
 
-    return 3+16, 3  # +16 for bottom line
+    v = DAC_MESSAGES.get(0, controls.SELECTED_PARAMETER)
+
+    if not v == LAST_NUMBER:  # only ask the display to draw if something changed
+        a, b, c = num2nums(v)
+        BOTTOM_LINE[4] = a
+        BOTTOM_LINE[5] = b
+        BOTTOM_LINE[6] = c
+
+        LAST_NUMBER = v
+
+        return 3+16, 3  # +16 for bottom line

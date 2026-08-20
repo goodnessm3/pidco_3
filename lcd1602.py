@@ -143,6 +143,7 @@ class LCD:
         self.txbuf[2] = low | EN
         self.txbuf[3] = low
 
+        print("wrote ", high, low, " to lcd")
         self.bus.writeto(self.addr, self.txbuf)
 
         #  time.sleep_us(40)  # no explicit sleep, just check in the calling fxn whether we've waited long enough

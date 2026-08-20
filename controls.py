@@ -168,6 +168,7 @@ def parameter_increment(value, direction):
 
     SELECTED_PARAMETER = spl[SELECTED_PARAMETER_INDEX]
     print(PARAMETER_NAMES[SELECTED_PARAMETER], " selected for changes.")
+    print("idx is ", SELECTED_PARAMETER_INDEX)
 
     if not omni.DISPLAYED_PARAMETER == SELECTED_PARAMETER_INDEX:
         omni.DISPLAYED_PARAMETER = SELECTED_PARAMETER

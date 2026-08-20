@@ -18,7 +18,7 @@ from readmidi import MidiReader
 from voice2 import Voice
 from controls import Controls, configure_voice_list
 
-from mydacs import send_dac_value, dac_setup, ADDRESS_MANAGER, DAC_MESSAGES, send_dac_value_mcp
+from mydacs import send_dac_value, dac_setup, ADDRESS_MANAGER, DAC_MESSAGES, send_dac_value_mcp, dummy_lcd_write
 
 time.sleep(1)
 
@@ -181,14 +181,14 @@ for v in VOICES:
     v.assign_filter_fitter()  # now fitters are calibrated we can tell the voices which to use
 
 
-print("LCD setting up")
+##print("LCD setting up")
 
-from lcd1602 import LCD
+##from lcd1602 import LCD
 
-i2c = I2C(1, scl=Pin(P_I2C_SCL), sda=Pin(P_I2C_SDA))  # for driving the LCD
+##i2c = I2C(1, scl=Pin(P_I2C_SCL), sda=Pin(P_I2C_SDA))  # for driving the LCD
 # I2C block 1 is associated with pins 26 and 27 (defined in pin assignments file)
 
-DISPLAY = LCD(i2c, display_manager.TOP_LINE, display_manager.BOTTOM_LINE)  # set up the text display
+##DISPLAY = LCD(i2c, display_manager.TOP_LINE, display_manager.BOTTOM_LINE)  # set up the text display
 
 #DM = DisplayManager()
 #pair = DM.update()  # get a new frame buffer for the LCD
@@ -200,13 +200,21 @@ while 1:
 
     loopcount += 1
 
+    """
     DISPLAY.draw_screen()
+    drew = False
+
     if omni.DISPLAY_DIRTY:
         pos, length = display_manager.show_parameter()
         DISPLAY.update(pos, length)
         omni.DISPLAY_DIRTY = False
+        drew = True
 
-    DISPLAY.update(*display_manager.show_number())
+    if not drew:  # mostly always do this, but give priority if the param name needs to be shown
+        baz = display_manager.show_number()
+        if baz:
+            DISPLAY.update(*baz)
+    """
 
     MR.read()  # induce the MidiReader to compile messages to read out
 
@@ -286,3 +294,9 @@ while 1:
             # write a "dummy" message to the DAC so that the cutoff control voltage can be sampled
             send_dac_value(5, 0)  # channel 5 is unused and unconnected, so harmlessly write to it
             # which induces a chip select toggle
+
+    # TEMP LCD testing code
+
+    ADDRESS_MANAGER.put(6)
+    dummy_lcd_write(256)
+    time.sleep(0.0001)
