@@ -16,9 +16,9 @@ def gen2():
 
     while True:
         if count <= 0:
-            target = getrandbits(17) - 65536
+            target = getrandbits(16) - 32768  # todo - is this scale wide enough? I think so.
             while target == val:
-                target = getrandbits(17) - 65536
+                target = getrandbits(16) - 32768
 
             increment = (target - val) // omni.RANDOM_SLOPE
             if increment == 0:
