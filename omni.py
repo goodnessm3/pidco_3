@@ -11,6 +11,7 @@ FILTER_V_OCT = 65535  # the actual max for the controls is 65024, so apply an of
 # of volts per octave that we apply to the filter response. This variable is changed from within the controls module.
 DISPLAYED_PARAMETER = 0  # for the LCD
 DISPLAY_DIRTY = False
+RANDOM_SLOPE = 128  # controls how often the random mod source changes direction
 
 try:
     with open("OMNIDATA.bin", "rb") as f:

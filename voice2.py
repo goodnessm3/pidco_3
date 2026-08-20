@@ -5,6 +5,7 @@ from mydacs import DAC_MESSAGES
 import omni
 from dac_channels import *
 from fastlog2 import fast_log2
+from random_mod import RANDOM_MOD_SOURCES
 from settings import *
 from dco_controls import DCO_STATE_MACHINE_GENERATOR
 import wavecount_table
@@ -39,17 +40,19 @@ for x in range(100):
 
 class Voice:
 
-    def __init__(self, address, adsrs=2, lfos=0):
+    def __init__(self, address, adsrs=2, lfos=0, randoms=0):
 
         self.address = address
         self.active_adsrs = adsrs  # this is a bitmask that tells us which ADSRs to query. Default just to VCA.
         self.active_lfos = lfos
+        self.active_randoms = randoms  # random mod sources
         self.oscillator = next(DCO_STATE_MACHINE_GENERATOR)
 
         #for x in range(8):
             #self.adsrs.append(LinearADSR())
         self.adsrs = ADSRS[address * 9: address * 9 + 9]  # todo - memoryview?????
         self.lfos = LFOS
+        self.randoms = RANDOM_MOD_SOURCES
 
         self.filter_fitter = None  # calculate volts per octave
         #print(self.adsrs)
@@ -96,6 +99,7 @@ class Voice:
         addr = self.address
         todo_adsr = self.active_adsrs
         todo_lfo = self.active_lfos
+        todo_random = self.active_randoms
         #print(todo_lfo)
         # todo_params = DIRTY_PARAMS  # a static parameter got changed by a slider
 
@@ -112,6 +116,7 @@ class Voice:
                 chan += 1
                 todo_adsr >>= 1  # TODO: NOT ideal that we bit shift in two different places!!!
                 todo_lfo >>= 1
+                todo_random >>= 1
                 continue  # don't touch this
 
             modulation = omni.VOICE_PARAMS[chan]
@@ -145,6 +150,11 @@ class Voice:
                 val = self.lfos[chan].get(self.address)  # LFOs track the caller to do a unique phase offset
                 modulation += val
 
+            if todo_random & 1:
+                val = self.randoms[chan].get()
+                modulation += val
+                #print("random mod was ", val)
+
             if modulation > 65535:  # filter mod may exceed the range due to v/oct tracking
                 modulation = 65535  # apparently this is faster than using min, because no function call
 
@@ -158,5 +168,5 @@ class Voice:
             DAC_MESSAGES.set(addr, chan, modulation >> 8)  # TODO - is this the best place to scale down to 8 bit?
             todo_adsr >>= 1
             todo_lfo >>= 1
-            #todo_params >>= 1
+            todo_random >>= 1
             chan += 1

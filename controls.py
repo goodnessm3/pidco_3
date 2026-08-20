@@ -4,6 +4,7 @@ from mydacs import DAC_MESSAGES
 import omni
 from ADSR3 import ADSRS
 from LFO2 import LFOS
+from random_mod import RANDOM_MOD_SOURCES
 VOICES = []  # this will be replaced by a voice list passed from the main module
 from settings import *
 from dac_channels import *  # defines the parameter names list and the numbers for the channels
@@ -72,6 +73,26 @@ def set_adsr_depth(value):
             VOICES[voice].active_adsrs &= ~(1 << idx)  # no need to query this ADSR
             print(f"Voices will not update {parm} ASDR.")
         offset += 9  # need to update ADSRs one per voice
+
+def set_random_rate(value):
+
+    v = 512 - (value * 496) // 65536 # maps the input dial so that full right is 16 and full left is 512 (slow change)
+    omni.RANDOM_SLOPE = v
+
+def set_random_depth(value):
+
+    RANDOM_MOD_SOURCES[SELECTED_PARAMETER].depth = value
+    print("random depth seted", value)
+
+    parm = PARAMETER_NAMES[SELECTED_PARAMETER]
+
+    for voice in range(VOICE_COUNT):  # todo: it would really be better not to have to loop in here
+        if value > 0:
+            VOICES[voice].active_randoms |= 1 << SELECTED_PARAMETER  # tell the voice that it needs to query
+            print(f"Voices will get updates from {parm} RANDOM.")
+        else:
+            VOICES[voice].active_randoms &= ~(1 << SELECTED_PARAMETER)  # no need to query this
+            print(f"Voices will not update {parm} RANDOM.")
 
 def set_lfo_rate(value):
 
@@ -182,7 +203,9 @@ option_lists = {"shape":["SAW", "RAMP", "TRI", "SINE", "SHARK"],
 
 CONTROL_FUNCTIONS = [-1] * 128
 
-#CONTROL_FUNCTIONS[19] = parameter_select  # doesn't need to be a lambda func because it just takes the knob value
+# ch 19 = random depth, 16 = randon slope
+CONTROL_FUNCTIONS[19] = set_random_depth
+CONTROL_FUNCTIONS[16] = set_random_rate
 CONTROL_FUNCTIONS[18] = set_filter_tracking
 #CONTROL_FUNCTIONS[21] = play button
 #CONTROL_FUNCTIONS[22] = rec button
