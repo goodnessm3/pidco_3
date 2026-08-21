@@ -18,7 +18,7 @@ from readmidi import MidiReader
 from voice2 import Voice
 from controls import Controls, configure_voice_list
 
-from mydacs import send_dac_value, dac_setup, ADDRESS_MANAGER, DAC_MESSAGES, send_dac_value_mcp, dummy_lcd_write
+from mydacs import send_dac_value, dac_setup, ADDRESS_MANAGER, DAC_MESSAGES, send_dac_value_mcp, dummy_lcd_write, lcd_write
 
 time.sleep(1)
 
@@ -33,7 +33,7 @@ import ADSR3
 import LFO2
 
 
-
+""" #####TEMP DISABLED FOR LCD TEST
 
 for x in range(VOICE_COUNT):
     #prepare_tune_latch()
@@ -43,6 +43,8 @@ for x in range(VOICE_COUNT):
     dac_setup()  # manages reset pin
     time.sleep(0.1)
 
+
+"""
 
 ################### TESTING SETUP CODE #######################
 
@@ -100,16 +102,6 @@ configure_voice_list(VOICES)
 HELD_NOTES = array("B", [0] * 150)  # record which voice is playing which note
 VOICE_ALLOCATOR = VoiceAllocator(VOICE_COUNT)
 
-"""
-DAC_MESSAGES.set(0, DAC_WAVESELECT, 255)
-time.sleep(0.001)
-ADDRESS_MANAGER.put(7)
-time.sleep(0.001)
-send_dac_value_mcp(0, 255)
-time.sleep(0.001)
-ADDRESS_MANAGER.put(0)
-time.sleep(0.001)
-"""
 
 def calibrate_voices():
 
@@ -174,12 +166,14 @@ def startup_calibration(voiceno, FILTER_VOLTAGE_CURVES):
         time.sleep(0.001)
         send_dac_value(dest, value)
 
+"""  !!!!!!!!!!!!!!!!! TEMP DISABLED WHILE TESTING LCD
 
 calibrate_voices()  # set up filter curves
 
 for v in VOICES:
     v.assign_filter_fitter()  # now fitters are calibrated we can tell the voices which to use
 
+"""  # !!!!!!!!!!!!!!!!! TEMP DISABLED WHILE TESTING LCD
 
 ##print("LCD setting up")
 
@@ -193,6 +187,41 @@ for v in VOICES:
 #DM = DisplayManager()
 #pair = DM.update()  # get a new frame buffer for the LCD
 #DISPLAY.update(0, 5)  # send the new frame buffer for display next loop
+
+############### TEMP LCD
+
+time.sleep(0.001)
+lcd_write(0b00110000, 0)
+time.sleep(0.005)
+
+instructions = [0b00110000,
+                0b00110000,
+                0b00111000,  # function set
+                0b00000001,  # clear display
+                0b00000110,  # entry mode set
+                0b00001100,  # display on
+                ]
+
+ADDRESS_MANAGER.put(6)
+
+for i in instructions:
+    lcd_write(i, 0)
+    time.sleep(0.003)
+
+import random
+
+for x in range(16):
+    lcd_write(random.randint(65, 65+26), 1)  # fill the display with random characters
+    time.sleep(0.001)
+
+
+time.sleep(2)
+print("exiting")
+
+
+exit()
+
+################### TEMP LCD
 
 import random
 

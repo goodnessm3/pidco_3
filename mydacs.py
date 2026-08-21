@@ -175,6 +175,28 @@ def dummy_lcd_write(q):
     # so we are sending the biggest bit first
     sm_spi.put(q << 16)
 
+    # prototyping - QA is D0, Qb D1, 8th bit is D7 - from second SR
+    # so 10000000 sends 1 to D7
+
+    # FIRST register - QH, the lowest bit, is E
+    # rw is second bit
+    # 3rd bit is RS
+
+def lcd_write(data, rs):
+
+    RS = 0b00100000 if rs else 0b00000000  # register select, 0 for character, 1 for command
+    RW = 0b01000000  # read/write, always zero. So not used here, but keep it as a note.
+    EN = 0b10000000  # enable, data is clocked in at rising edge
+
+    der = ((data << 8) | RS | EN)
+    sm_spi.put(der << 16)  # put the command into the shift registers with enable = hi
+    time.sleep(0.0001)  # TODO - NO SLEEP in PROPER VERSION
+    der2 = ((data << 8) | RS )
+    sm_spi.put(der2 << 16)  # now the data is presented at the pins, tell the LCD to load it in
+    # data is latched in at falling edge of E pin
+    time.sleep(0.0001)
+
+
 def write_to_dac_old(b):
 
     """Expects a 16-bit command that will be split into two bytes for sending"""
